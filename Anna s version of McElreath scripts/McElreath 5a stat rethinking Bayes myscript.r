@@ -104,7 +104,7 @@ dat$Loc <- d$Loc
 # Simulate data with different relationships
 N <- 50 # number of simulated States
 age <- rnorm(N) # sim A
-mar <- rnorm(N, -age) # sim A -> M
+mar <- rnorm(N, -age) # sim A -> M 
 div <- rnorm(N, age) # sim A -> D
 # or:
 # div <- rnorm(N, age + mar) # sim A->D<-M
