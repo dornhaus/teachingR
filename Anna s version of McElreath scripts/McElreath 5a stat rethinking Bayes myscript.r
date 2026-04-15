@@ -43,10 +43,10 @@ colorscale <- viridis(100)
 #      4 is just logistics for 3 and 5, but 5 is making the actual predictions;
 #      predictions are always counterfactual (or at least all but one of them)
 # - You derive a unique measure (the conditional independence here) that
-# the hypotheses make contradictory predictions about. 
-#      still part of step 5!
+#      the hypotheses make contradictory predictions about. 
+#      Still part of step 5!
 # - Then you statistically estimate which of the two predictions the 
-# estimated measure is more like. 
+#      estimated measure is more like. 
 #      In the first example, essentially we are saying that if a factor is causal,
 #      the model should not change the corresponding parameter based on whether
 #      something else is included.
@@ -63,7 +63,7 @@ colorscale <- viridis(100)
 # The parameters are independent and simply added (weighted by variables).
 
 # Drawing DAGs ---------------------------
-# Here is where we really want to draw DAGs
+# Here is where we really want to draw DAGs:
 # Directed acyclic graphs
 dag5.1 <- dagitty("dag {
 A -> D
