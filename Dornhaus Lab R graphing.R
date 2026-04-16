@@ -1,40 +1,34 @@
 # Anna Dornhaus & Lab
 # R script for data analysis and figures for 
 # just learning to do it in R
-
-# Paper reference: NONE
-
-### INTRO ----------------------
-
-# Note how you can collapse parts of the code by clicking on the small triangles
-# next to the line numbers. 
-# Do this now for all of them except the Intro if you like. 
-# This code starts with libraries and graphics setup, which are sections you 
-# should have in every script, in addition to the header above. 
-# You may initially have the libraries and graphics setup sections empty, and 
-# populate them as your code gets more complicated. Your header should never be
-# empty!! Also, make sure immediately that your code is synced to github, and 
-# don't have several undistinguished versions lying around. 
+# 2026
 
 ### Libraries ------------------
-#library(lme4) #needed for GLMMs
-#library(lmerTest) #needed for obtaining p-values in lmm
-#library(emmeans) #post-hoc comparisons
-
+# Overall rule: only add the ones you know you need!
 # General data handling
 library(tidyverse) # for bind.rows
 # File access
 library(readxl)
-library(googlesheets4) # for working with Google Sheets
-library(googledrive) # for drive_download
 # Colors
-library(scales)  # for number_format & color scales; unnecessary if you install tidyverse (bc included)
+library(scales)  # for number_format & color scales
 library(viridis)
-# Making output tables for statistical models
-library(sjPlot) # for linear models output tables
 
+### Color and parameter settings -----------------------------
 
-# Graphics setup -----------------------------
+# Think about the types of things you might want to illustrate, e.g. 
+# treatments or factor levels that you might want to represent. 
+
+# I really like the viridis package for color sets - 
+# https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html 
+# The examples below use this.
+
+# But I also just heard about the Wes Anderson package - 
+# https://github.com/karthik/wesanderson 
+# Sounds awesome. Whichever one you use, pre-made color palettes are usually
+# better than you picking your own colors, especially when you have more than 
+# two. 
+
+# For example:
 no_categories <- 15
 ## Colorpalette
 twogroupcolors <- c("#5a9a8f", "#7b6ea8")
@@ -44,106 +38,64 @@ severalcategories_colors <- magma(no_categories)
 ## Similar to colors, it often makes sense to define some other things
 ## universally for all your plots, e.g. margins, where the sample sizes
 ## are plotted, y-axis range. This depends on your figures though.
+# For example:
 y_max <- 6
 y_min <- 0
 N_y_offset <- 0.95 # This puts sample size numbers 5% below max, for example
 
 
 
-# IMPORT ----------------------------------
-# This section has several methods for importing. Don't feel like you need to master
-# all of them at once - just pick whichever one is most important for you right 
-# now. 
 
-# A common problem when reading any files is that you must make sure
-# that R uses the folder you want as 'working directory'. You can
-# pick the working directory from the 'Session' menu above; or 
-# you can write the path here in the code, e.g.:
-setwd("C:/Users/dornh/Dropbox/Github/teachingR")
-# But note that this is a little problematic as this detailed path
-# would never work on someone else's computer. Instead,
-# you can also use
+### Import ------------------------
+# Just some examples:
 setwd("../teachingR")
-# or similar ... the ".." means 'go up one directory level' and then
-# it will go into the folder to the right of the "/". 
-MyDataLocalFolder <- read.table("./example_data/bb col data.csv"
-                     , header=T
-                     , row.names=1
-                     , sep = ","
-                     , dec = "."
-                     )
-
-# Or directly from a Google Sheet:
-MyDatafromGoogleSheets <- read.csv("https://docs.google.com/spreadsheets/d/1K2D2rH770iDfZzlwakHK89bwvoPqWDLaHbVNsanJFX8/gviz/tq?tqx=out:csv")
-# Or an existing .csv file on Google Drive:
-MyDatafromGoogleSheets <- read.csv("https://drive.google.com/uc?export=download&id=1woJYnpsfMBPCC3kPSErcydgDCduEKjzy")
-# Note that in both cases you are not just pasting the entire link from your browser, you are modifying it to include 
-# the file id and some other stuff. Pattern match here!
-
-# An .xlsx file from Google Drive is more complicated:
-# You have to first download the file into a local file, then
-# import the local file into R. 
-googlepath <- "https://docs.google.com/spreadsheets/d/1sF5WnJs0uxeLKApn7_JzGJMozu6wgSPJ/edit"
-tempxlsfile <- tempfile(fileext = ".xlsx")
-drive_download(as_id(googlepath), path = tempxlsfile, overwrite = TRUE)
-MyDatafromGoogleDrive  <- read_excel(tempxlsfile)
-unlink(tempxlsfile)
-
-# Or directly from github:
-MyDatafromGithub <- read.csv("https://raw.githubusercontent.com/shannonmcwaters/Directed-exploration/refs/heads/main/Maze%20Data%20Raw")
-
-# Import a whole list of files
-# Note that this will only work if all the files have the same columns (and otherwise
-# it is anyway doubtful that this would make sense)
+MyData <- read.table("./example_data/bb col data.csv", header=T, row.names=1, sep = ",")
+MyData2 <- read.csv("https://docs.google.com/spreadsheets/d/1K2D2rH770iDfZzlwakHK89bwvoPqWDLaHbVNsanJFX8/gviz/tq?tqx=out:csv")
+colnames(MyData2) <- c("Tree", "Leaf", "Ants", "Aphids")
 files <- (Sys.glob("./example_data/similardatasheets/*.csv"))
-# Initiate a blank data frame
 EnormousDataLocal <- data.frame()
-# Read content of all files into a list
 listOfDataframes <- lapply(files, 
-                             function(x) {
-                               read.table(x, 
-                                          header = T,
-                                          sep = ",",
-                                          skip = 6
-                               )
-                             }
-)
-# Add all the rows from all the files together
-EnormousDataLocal <- do.call("bind_rows", listOfDataframes)
-
-# Import a whole list of xls files from Google Drive
-# Headache! Saving as csv is better...
-googledrivefolderfiles <- drive_ls(as_id("https://drive.google.com/drive/folders/1aZWvhJjgTH9QTrD9hV1LiPiOKFRxmH7x"))
-files2 <- googledrivefolderfiles$id
-names2 <- googledrivefolderfiles$name
-files_local <- vector(mode = "character", length = length(files2))
-dir.create(file.path("./", "temp"), showWarnings = FALSE)
-for (i in 1:length(files2)) {
-  # Put name in files_local
-  files_local[i] <- paste("./temp/", names2[i])
-  # Download file
-  drive_download(files2[i], path = files_local[i], overwrite = TRUE)
-}
-EnormousData <- data.frame()
-# Read content of all files into a list
-listOfDataframes <- lapply(files_local, 
                            function(x) {
-                             read_excel(x)
+                             read.table(x, 
+                                        header = T,
+                                        sep = ",",
+                                        skip = 6
+                             )
                            }
 )
-# Add all the rows from all the files together
-EnormousData <- do.call("bind_rows", listOfDataframes)
+EnormousDataLocal <- do.call("bind_rows", listOfDataframes)
 
 
-# GRAPHING THINGS ------------------------------
+# GRAPHING DATA ------------------------------
+# In order for us to graph anything, you of course have to have data. 
+# I'm hoping you will pick code for a graph that fits your own data, and 
+# you'll adjust it to fit with your own data table. 
+# For the most part, I'm assuming your data table is called
+MyData
+# And then you have columns that become the x and y axes:
+# Remember that the x-axis is typically a treatment or manipulated variable, 
+# or a factor that is thought to (perhaps) explain something.
+# The y axis is the outcome or response variable, the measurement you made as a 
+# result of your method. 
+MyData$X <- MyData$treatment
+MyData$Y <- MyData$avgsize
+
+# But if we want code to be reusable, it is often useful to assign the specific
+# data we want to graph to a standard variable names, e.g. 
+graph_data <- MyData
+# That way, your graph code always uses 'graph_data', and you can copy and paste
+# that code to work in different places, and you have to only change this one line.
+
+# By far the most frequent plots you'll need are boxplots (categories, like
+# treatments, on the x-axis) or scatterplots (a continuous factor on the x-axis).
 
 ### BOXPLOTS ### ---------------
 # Generally you use a boxplot when plotting a continuous y
 # against a categorical x axis (e.g. an outcome against 2 treatments).
 
 # Bare boxplot
-boxplot(avgsize ~ treatment
-        , data = MyData
+boxplot(Y ~ X
+        , data = graph_data
         , xlab = "X Concept [unit measured]"
         , ylab = "Y Concept [unit measured]"
         , col = threegroupcolors
@@ -158,14 +110,14 @@ boxplot(avgsize ~ treatment
 
 # Margins:
 par(oma = c(2,2,2,2), mar = c(4,4,1,1), mgp=c(3, 1, 0), las=1) 
-# bottom, left, top, right
-par(mfrow=c(1,1))
+# in order: bottom, left, top, right
+par(mfrow=c(1,1)) # one graph panel
 
 # How to make a great boxplot -
 
 # Saving the plot into a variable allows us to access plot parameters afterwards.
-Nice_Plot <- boxplot(avgsize ~ treatment
-                     , data = MyData
+Nice_Plot <- boxplot(Y ~ X
+                     , data = graph_data
                      , xlab = "X Concept [unit measured]"
                      , ylab = "Y Concept [unit measured]"
                      , range = 0
@@ -190,8 +142,8 @@ mtext("additional margin label", side=2, line=2, las=0)
 mtext("additional margin label on outside", side=1, line=4, las=0, xpd = TRUE)
 
 # Represent the raw data as well, especially for mid- to low sample sizes.
-stripchart(avgsize ~ treatment
-           , data = MyData
+stripchart(Y ~ X
+           , data = graph_data
            , add = TRUE # this plots this graph on top of the existing one
            , pch = 19
            , col = threegroupcolors
@@ -203,42 +155,52 @@ stripchart(avgsize ~ treatment
 
 
 ### SCATTERPLOTS ### ---------------
+# A scatterplot is typically used whenever we have a continuous variable on the 
+# x-axis. 
+# E.g. 
+graph_data$X <- graph_data$stdevsize
+
 # You may or may not need all the features included here. But at minimum, you want
 # fairly large points, in almost all cases make them slightly transparent, and
 # really clear axis labels. 
+
 # These are just the standard margins I use - you could have something 
 # else - but I want to make sure they are reset here in case you were experimenting
 # with it before. 
 par(oma = c(0,0,0,0), mar = c(4,4,1,1), mgp=c(3, 1, 0), las=1) 
 # bottom, left, top, right
 par(mfrow=c(1,1))
-graph_data <- MyDataLocalFolder
-plot(avgsize ~ stdevsize 
+plot(Y ~ X
      , data = graph_data
      , pch = 19 # set point shape
      , col = threegroupcolors[graph_data$treatmentcode]
-    #, col = threegroupcolors[sapply(graph_data$treatment, function(x) switch(x, "S"=1, "M"=2, "L"=3))]
+     #, col = threegroupcolors[sapply(graph_data$treatment, function(x) switch(x, "S"=1, "M"=2, "L"=3))]
      # So you can use the first line if you have a numerical column you want to use
      # to determine the color, or you use the second version if you have a set of label names. 
      , cex = 1.5 # point size - 1 is default, but I like them bigger
      , xlab = "X-Axis Label [units]"
      , ylab = "Y-Axis Label [units]"
 )
+
 # In some cases, it makes sense to label points individually. 
+# First we define the location of the labels:
+label_yoffset <- 0
 label_xoffset <- -max(graph_data$stdevsize) * 0.002 # you have to play around with 
 # this to see what looks good. I do it relative to the x-axis for comparability
 # between plots. 
-label_yoffset <- 0
-text(graph_data$stdevsize + label_xoffset # x coordinates of labels
-     , graph_data$avgsize + label_yoffset # y coordinates of labels
+text(graph_data$X + label_xoffset # x coordinates of labels
+     , graph_data$Y + label_yoffset # y coordinates of labels
      , labels = graph_data$queensproduced # text in labels
      , cex = 0.5 # size of text
      , pos = 4 # make the text left aligned (to the right of given coordinates)
 )
 
-
+# Graphing a larger dataset ---------------------
 # Let's try something like this with a larger dataset:
 graph_data <- EnormousDataLocal
+graph_data$X <- graph_data$average.exploited.resource.distance
+graph_data$Y <- graph_data$collected.resource.units
+
 # I'm going to redefine colors here to make sure it fits with this dataset -
 # in your own script, you would presumably do this in the graphics settings
 # at the top.
@@ -255,7 +217,7 @@ graph_data$colors <- cut(graph_data$total.agent.timesteps.spent.searching, break
 par(oma = c(0,0,0,0), mar = c(4,4,1,1), mgp=c(3, 1, 0), las=1) 
 # bottom, left, top, right
 par(mfrow=c(1,1))
-plot(collected.resource.units ~ average.exploited.resource.distance
+plot(Y ~ X
      , data = graph_data
      , pch = 19 # set point shape
      , col = colorgradient[graph_data$colors]
@@ -268,7 +230,6 @@ plot(collected.resource.units ~ average.exploited.resource.distance
 # We can even upgrade this to a multi-panel plot, if we want a boxplot on the sides
 # to show the distribution of values. This makes some sense here also since the points
 # overlap so much it is hard to tell how many are where.
-graph_data <- EnormousDataLocal
 
 # For this we can use another par() setting (e.g. mfrow=c(2,2)), or for more 
 # control use 'layout()'.
@@ -299,7 +260,7 @@ par(oma = c(0,0,0,0), mgp=c(3, 1, 0), las=1)
 
 # Panel 1: Distribution of y-values
 par(mar = c(4,0,1,0)) # bottom, left, top, right
-boxplot(graph_data$collected.resource.units
+boxplot(graph_data$Y
         , xaxt = 'n'
         , yaxt = 'n'
         , frame = FALSE
@@ -309,7 +270,7 @@ boxplot(graph_data$collected.resource.units
 
 # Panel 2: The main graph, a scatterplot
 par(mar = c(4,4,1,2)) # bottom, left, top, right
-plot(collected.resource.units ~ average.exploited.resource.distance
+plot(Y ~ X
      , data = graph_data
      , pch = 19 # set point shape
      , col = colorgradient[graph_data$colors]
@@ -333,7 +294,7 @@ legend("topright"
 
 # Panel 4: Boxplot of x-axis values
 par(mar = c(0,4,0,2)) # bottom, left, top, right
-boxplot(graph_data$average.exploited.resource.distance
+boxplot(graph_data$X
         , xaxt = 'n' # This deletes this axis
         #, yaxt = 'n'
         , frame = FALSE
@@ -350,6 +311,8 @@ boxplot(graph_data$average.exploited.resource.distance
 # in the legend does not have transparency. 
 # - one could also squish the boxplots on the sides more by changing the heights and widths
 # argument in layout, to get rid of more of the white space.
+
+# ILLUSTRATING STATISTICAL RESULTS ------------------------
 
 
 
